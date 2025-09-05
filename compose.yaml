@@ -1,0 +1,32 @@
+version: "3.8"
+
+services:
+  song-craft-database:
+    image: "bitnami/postgresql"
+    container_name: song-craft-database
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    env_file:
+      - .env # Loads the base variables
+    environment:
+      # Use .env variables to configure PostgreSQL
+      - POSTGRES_USER=${POSTGRES_USERNAME}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DATABASE}
+    volumes:
+      - postgres_data:/bitnami/postgresql
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USERNAME} -d ${POSTGRES_DATABASE}",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+volumes:
+  postgres_data:
+    driver: local
