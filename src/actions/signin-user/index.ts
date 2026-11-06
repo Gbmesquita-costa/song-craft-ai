@@ -6,7 +6,10 @@ import { signIn } from "@/../auth";
 import { signinUserSchema } from "@/schemas/signin-user-schema";
 import { DEFAULT_SIGNIN_REDIRECT } from "../../../routes";
 
-const handleSigninUser = async (state: any, signinValues: FormData) => {
+const handleSigninUser = async (
+  _prevState: unknown,
+  signinValues: FormData
+) => {
   const signinUserValues = Object.fromEntries(signinValues.entries());
   const signinValidation = signinUserSchema.safeParse(signinUserValues);
 

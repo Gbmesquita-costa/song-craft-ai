@@ -89,6 +89,8 @@ const mockSong = {
   ],
 };
 
+type SongSection = (typeof mockSong)["sections"][number];
+
 const mockPracticeStats = {
   sessionTime: 1234, // seconds
   accuracy: 87,
@@ -136,7 +138,7 @@ const DashboardPractice = () => {
     setIsPlaying(!isPlaying);
   };
 
-  const getSectionStatus = (section: any) => {
+  const getSectionStatus = (section: SongSection) => {
     if (section.isCompleted) return "completed";
     if (section.isActive) return "active";
     if (section.progress > 0) return "started";
@@ -144,7 +146,7 @@ const DashboardPractice = () => {
     return "pending";
   };
 
-  const getSectionIcon = (section: any) => {
+  const getSectionIcon = (section: SongSection) => {
     const status = getSectionStatus(section);
     switch (status) {
       case "completed":

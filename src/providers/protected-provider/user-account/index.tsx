@@ -14,7 +14,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 import { Bell, Crown, Loader, LogOut, Settings, User } from "lucide-react";
-import { useSession } from "next-auth/react";
 
 interface LogOutUserContainerProps {
   pending: boolean;
@@ -47,8 +46,7 @@ const LogOutUserContainer = ({ pending }: LogOutUserContainerProps) => {
 };
 
 const UserAccount = () => {
-  const [_, formAction, isPending] = useActionState(handleLogoutUser, null);
-  // const { data: session, status } = useSession();
+  const [, formAction, isPending] = useActionState(handleLogoutUser, null);
 
   return (
     <div className="mt-auto space-y-4">
