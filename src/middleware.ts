@@ -12,7 +12,9 @@ const { auth } = NextAuth(authConfig);
 
 export default auth((req) => {
   const { nextUrl } = req;
-  const isloggedIn = !!req.auth;
+  // On a server/config error Auth.js sets `req.auth` to an error payload
+  // instead of null, so only a session carrying a user counts as signed in.
+  const isloggedIn = !!req.auth?.user;
 
   const isApiAuthRoute = nextUrl.pathname.startsWith(apiAuthPrefix);
   const isPublicRoute = publicRoutes.includes(nextUrl.pathname);
