@@ -12,7 +12,8 @@ Rules for any coding agent (and human) changing this repository.
   - `yarn typecheck`
   - `yarn lint`
   - `yarn build`
-  - the test commands, once they exist in `package.json`
+  - `yarn test` (Vitest unit tests)
+  - `yarn test:e2e` (Playwright; run `npx playwright install chromium` once)
 
 ## Architecture
 
@@ -26,6 +27,10 @@ Rules for any coding agent (and human) changing this repository.
 - Database access goes through `src/repositories/` using the Prisma client
   from `infra/database.ts`. Schema changes need a Prisma migration in
   `prisma/migrations` (`yarn prisma:migrate:dev`).
+- Tests: unit tests sit next to the code as `*.test.ts(x)` (Vitest, Node by
+  default, `// @vitest-environment jsdom` for components); e2e specs live in
+  `e2e/`. Neither may need a real database: mock `@/repositories/*` in unit
+  tests and only exercise paths that stop before Prisma in e2e.
 - Read environment variables through `env` from `infra/env.ts`, and add every
   new variable to both the Zod schema there and `.env.example`.
 

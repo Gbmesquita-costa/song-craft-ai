@@ -20,12 +20,15 @@ yarn dev                     # docker Postgres up -> wait -> prisma migrate dev 
 yarn typecheck               # next typegen + tsc --noEmit (must pass before every commit)
 yarn lint                    # ESLint flat config (must pass before every commit)
 yarn build                   # production build (must pass before every commit)
+yarn test                    # Vitest unit tests, no database needed (must pass before every commit)
+yarn test:e2e                # Playwright e2e against next build + start on :3100, no database needed
 yarn prisma:migrate:dev      # create/apply migrations after editing prisma/schema.prisma
 yarn database:up | database:stop | database:down
 ```
 
-There is no test suite yet. When tests are added, run them before committing
-as well.
+Vitest 5 needs Node.js 22.12+. On Windows run it from a cwd with an uppercase
+drive letter (`C:\...`); a lowercase `c:\...` cwd makes every suite fail with
+`Cannot read properties of undefined (reading 'config')`.
 
 `infra/env.ts` validates the environment at import time. Without a valid
 `.env` (copy `.env.example`, generate `AUTH_SECRET`) the build fails; use
@@ -34,12 +37,14 @@ as well.
 ## Where things live
 
 - `auth.ts` – Auth.js instance (Prisma adapter, JWT session, jwt/session callbacks)
-- `auth.config.ts` – edge-safe config with the Credentials provider (also used by the proxy)
-- `routes.ts` – public routes, auth routes, API auth prefix, default redirect
+- `auth.config.ts` – shared config with the Credentials provider (also used by the proxy, which runs on Node.js)
+- `routes.ts` – route lists and `getRouteRedirect`, the pure access rules used by the proxy
 - `src/proxy.ts` – route protection (Next 16 proxy, formerly middleware)
 - `src/actions/<name>/index.ts` – Server Actions (`"use server"`)
 - `src/schemas/<name>/index.ts` – Zod schemas shared by actions and auth
 - `src/repositories/` – Prisma queries
+- `src/lib/auth/authorize-credentials.ts` – credentials check behind Auth.js `authorize`
+- `e2e/` – Playwright specs; unit tests sit next to the code as `*.test.ts(x)`
 - `infra/` – env validation, Prisma client, scripts
 - `src/app/(protected)/_components/` – dashboard screens (prototypes)
 

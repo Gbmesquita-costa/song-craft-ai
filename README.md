@@ -25,9 +25,10 @@ progresso.
 | Nova Transcrição | **Simulada**: o arquivo escolhido não é enviado a lugar nenhum; as etapas de "processamento" são temporizadores de 2 s |
 | Modo Prática | **Protótipo de UI**, sem áudio ou detecção de notas |
 | Pagamentos | **Não implementado** (o pacote `stripe` está nas dependências, mas não é usado) |
-| Login social (Google etc.) | **Não implementado** |
+| Login social (Google etc.) | **Não implementado** (os botões do Google aparecem nas telas de auth, mas não fazem nada) |
 | Lint | ESLint 10 com flat config (`eslint.config.mjs`, regras do `eslint-config-next`) |
-| Testes automatizados e CI | **Ainda não configurados** |
+| Testes automatizados | Vitest (unitários) e Playwright (e2e no Chromium); veja [Testes](#testes) |
+| CI | **Ainda não configurado** |
 
 ## Stack
 
@@ -83,15 +84,46 @@ Todas estão documentadas em [`.env.example`](./.env.example):
 | `yarn start` | Serve o build de produção |
 | `yarn typecheck` | Gera os tipos de rotas do Next (`next typegen`) e roda `tsc --noEmit` |
 | `yarn lint` | ESLint em todo o projeto |
+| `yarn test` / `yarn test:watch` | Testes unitários com Vitest (uma vez / modo watch) |
+| `yarn test:e2e` | Testes end-to-end com Playwright (faz `next build` + `next start` na porta 3100) |
 | `yarn prisma:migrate:dev` | `prisma migrate dev` |
 | `yarn database:up` / `database:stop` / `database:down` | Controla o container do Postgres |
 | `yarn wait-for-postgres` | Aguarda o container aceitar conexões |
+
+## Testes
+
+Os testes **não precisam de banco de dados** nem de `.env`.
+
+```bash
+yarn test                            # unitários (Vitest)
+npx playwright install chromium      # uma vez, baixa o navegador
+yarn test:e2e                        # end-to-end (Playwright)
+```
+
+- **Unitários** (`*.test.ts(x)` ao lado do código): schemas Zod de login e
+  cadastro, a lógica do `authorize` (`src/lib/auth/authorize-credentials.ts`,
+  com o repositório de usuários mockado), as regras de acesso de rotas
+  (`getRouteRedirect` em `routes.ts`), a validação do ambiente
+  (`infra/env.ts`), `cn` e os banners de erro/sucesso dos formulários (jsdom
+  + Testing Library).
+- **E2E** (`e2e/`): a landing page renderiza e leva a `/signin` e
+  `/signup`; os formulários mostram os erros de validação devolvidos pelas
+  server actions; visitantes sem sessão que abrem `/dashboard` vão para
+  `/signin`. O servidor de teste recebe variáveis descartáveis e um
+  `DATABASE_URL` apontando para uma porta fechada, por isso os testes só
+  cobrem caminhos que não chegam ao banco: **cadastro e login com sucesso não
+  são testados** ainda.
+
+Requisitos: o Vitest 5 exige **Node.js 22.12+** (a app em si roda com 20.9+).
+No Windows, rode os testes num terminal cujo diretório atual use a letra do
+drive em maiúscula (`C:\...`); com `c:\...` o Vitest carrega o projeto duas
+vezes e as suítes falham com `Cannot read properties of undefined`.
 
 ## Arquitetura
 
 ```
 auth.ts / auth.config.ts   Auth.js: provider Credentials, callbacks jwt/session, Prisma adapter
-routes.ts                  Rotas públicas, de autenticação e redirect padrão
+routes.ts                  Rotas públicas/de auth e getRouteRedirect (regras de acesso)
 infra/
   env.ts                   Validação das variáveis de ambiente (Zod)
   database.ts              PrismaClient singleton
@@ -99,6 +131,7 @@ infra/
 prisma/                    schema.prisma (User, Account) e migrations
 src/
   proxy.ts                 Redireciona visitantes e usuários logados conforme routes.ts
+  lib/auth/                authorizeCredentials (checagem de e-mail e senha do login)
   actions/                 Server Actions: signin-user, signup-user, logout-user
   schemas/                 Schemas Zod dos formulários de auth
   repositories/            Acesso a dados (getUserByEmail, getUserById)
@@ -108,6 +141,7 @@ src/
     api/auth/[...nextauth] Handlers do Auth.js
   components/              UI (ui/ = componentes base, auth/, home/, layouts/)
   providers/               Layout protegido (sidebar) e tema
+e2e/                       Testes end-to-end (Playwright)
 ```
 
 Fluxo de login: o formulário chama a server action `handleSigninUser`, que
