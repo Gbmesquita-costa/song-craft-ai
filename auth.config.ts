@@ -19,7 +19,15 @@ export default {
           if (!user || !user.password) return null;
 
           const passwordMatch = await compare(password, user.password);
-          if (passwordMatch) return user;
+          if (!passwordMatch) return null;
+
+          // Hand Auth.js only the public profile, never the password hash.
+          return {
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            image: user.image,
+          };
         }
 
         return null;
