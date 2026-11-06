@@ -1,8 +1,11 @@
 import { PrismaClient } from "@prisma/client";
 
+import { env } from "./env";
+
 const prismaClientSingleton = () => {
   return new PrismaClient({
-    log: process.env.NODE_ENV === "development" ? ["query"] : [],
+    datasourceUrl: env.DATABASE_URL,
+    log: env.NODE_ENV === "development" ? ["query"] : [],
   });
 };
 
@@ -15,4 +18,4 @@ const globalForPrisma = globalThis as unknown as {
 const db = globalForPrisma.prisma ?? prismaClientSingleton();
 export { db };
 
-if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = db;
+if (env.NODE_ENV !== "production") globalForPrisma.prisma = db;
