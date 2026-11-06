@@ -1,7 +1,6 @@
 "use client";
 
 import { useActionState, useState, useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -184,12 +183,6 @@ const SignInContainer = ({ state, isPending }: SignInFormContainerProps) => {
 };
 
 const SignIn = () => {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-
-  const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
-  const error = searchParams.get("error");
-
   // Default value for state
   const defaultState: SignInFormState = {};
   const [state, formAction, isPending] = useActionState(handleSigninUser, null);
