@@ -2,6 +2,9 @@
   "name": "song-craft-ai",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": ">=20.9.0"
+  },
   "scripts": {
     "dev": "run-s database:up && run-s wait-for-postgres && run-s prisma:migrate:dev",
     "postdev": "next dev",

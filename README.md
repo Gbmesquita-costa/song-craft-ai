@@ -31,7 +31,7 @@ progresso.
 
 ## Stack
 
-- **Next.js 15** (App Router, Server Actions) + **React 19** + **TypeScript**
+- **Next.js 16** (App Router, Server Actions) + **React 19** + **TypeScript**
 - **Tailwind CSS 4**, componentes no estilo shadcn/ui sobre **Radix UI**, **Framer Motion**
 - **Auth.js / NextAuth v5 (beta)** com `@auth/prisma-adapter`
 - **Prisma 6** + **PostgreSQL 17** (via Docker Compose em desenvolvimento)
@@ -39,7 +39,7 @@ progresso.
 
 ## Como rodar localmente
 
-Pré-requisitos: Node.js 20+, Yarn 1 (classic) e Docker com Docker Compose.
+Pré-requisitos: Node.js 20.9+, Yarn 1 (classic) e Docker com Docker Compose.
 
 ```bash
 # 1. Dependências

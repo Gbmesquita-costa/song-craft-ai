@@ -6,7 +6,7 @@ notes and a quick reference.
 
 ## Project in one paragraph
 
-SongCraft AI is a Next.js 15 (App Router) + React 19 + TypeScript app. Only
+SongCraft AI is a Next.js 16 (App Router) + React 19 + TypeScript app. Only
 credentials auth is real (Auth.js v5 + Prisma + Postgres). The dashboard pages
 are UI prototypes with hard-coded data and the transcription flow is simulated
 with timers. Do not describe prototype features as working in code comments,
