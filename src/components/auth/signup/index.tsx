@@ -75,7 +75,12 @@ const SignUpContainer = ({ state, isPending }: SignUpFormContainerProps) => {
   return (
     <div className="space-y-4">
       {/* Google Sign Up */}
-      <Button className="w-full h-11" variant="outline" disabled={isPending}>
+      <Button
+        type="button"
+        className="w-full h-11"
+        variant="outline"
+        disabled={isPending}
+      >
         {false ? (
           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
         ) : (
