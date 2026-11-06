@@ -1,399 +1,216 @@
-# 🎵 SongCraft AI
+# SongCraft AI
 
-<div align="center">
+Plataforma web (em desenvolvimento) para transformar músicas em material de
+estudo: transcrição, biblioteca de músicas, modo prática e acompanhamento de
+progresso.
 
-**Transforme qualquer música em sua próxima lição**
+> **Estado atual:** o projeto está no início. Autenticação por e-mail e senha
+> funciona de ponta a ponta com Postgres e o **afinador em tempo real** do Modo
+> Prática é real (microfone + detecção de notas no navegador). As demais telas
+> do dashboard são protótipos de interface com dados fixos e a transcrição é
+> **simulada**. A seção [O que está implementado](#o-que-está-implementado)
+> detalha cada parte.
 
-[![Next.js](https://img.shields.io/badge/Next.js-15-black)](https://nextjs.org/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue)](https://www.typescriptlang.org/)
-[![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.4-38bdf8)](https://tailwindcss.com/)
-[![Prisma](https://img.shields.io/badge/Prisma-5.7-2d3748)](https://www.prisma.io/)
-[![License](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
+## O que está implementado
 
-[Demo ao Vivo](https://songcraft-ai.vercel.app) • [Documentação](./docs/README.md) • [Roadmap](./ROADMAP.md) • [Contribuir](./CONTRIBUTING.md)
+| Área | Situação |
+| --- | --- |
+| Landing page (`/`) | Implementada (conteúdo estático: hero, features, preços, depoimentos de exemplo) |
+| Cadastro (`/signup`) | Implementado: validação com Zod, senha com bcrypt, usuário salvo no Postgres via Prisma |
+| Login (`/signin`) | Implementado: Auth.js (NextAuth v5) com provider Credentials e sessão JWT |
+| Logout | Implementado (server action) |
+| Proteção de rotas | Implementada no `src/proxy.ts` (rotas públicas, de auth e protegidas em `routes.ts`) |
+| Papel do usuário (`ADMIN`/`USER`) | Salvo no banco e propagado para o JWT e a sessão; ainda não há tela que dependa dele |
+| Validação de variáveis de ambiente | Implementada com Zod em `infra/env.ts`; a app não sobe com `.env` inválido |
+| Recuperar senha (`/forgot-password`) | **Não implementado**: a página informa isso; não existe token de reset nem envio de e-mail |
+| Dashboard, Minhas Músicas, Progresso, Configurações | **Protótipo de UI** com dados fixos definidos nos próprios componentes (ex.: `mockData`, `mockSongs`); nada é lido ou salvo no banco |
+| Nova Transcrição | **Simulada**: o arquivo escolhido não é enviado a lugar nenhum; as etapas de "processamento" são temporizadores de 2 s |
+| Afinador (Modo Prática) | **Implementado**: microfone via Web Audio API e detecção de notas (YIN) no navegador; veja [Afinador](#afinador-em-tempo-real) |
+| Resto do Modo Prática | **Protótipo de UI** (partitura, player, seções, metas e estatísticas usam dados fixos) |
+| Pagamentos | **Não implementado** (o pacote `stripe` está nas dependências, mas não é usado) |
+| Login social (Google etc.) | **Não implementado** (os botões do Google aparecem nas telas de auth, mas não fazem nada) |
+| Lint | ESLint 10 com flat config (`eslint.config.mjs`, regras do `eslint-config-next`) |
+| Testes automatizados | Vitest (unitários) e Playwright (e2e no Chromium); veja [Testes](#testes) |
+| CI/CD | GitHub Actions: checks em todo push/PR para `main` e `staging`; deploy na Vercel **configurado, mas só roda quando os secrets da Vercel existirem**; veja [CI/CD](#cicd) |
 
-</div>
+## Stack
 
----
+- **Next.js 16** (App Router, Server Actions) + **React 19** + **TypeScript**
+- **Tailwind CSS 4**, componentes no estilo shadcn/ui sobre **Radix UI**, **Framer Motion**
+- **Auth.js / NextAuth v5 (beta)** com `@auth/prisma-adapter`
+- **Prisma 6** + **PostgreSQL 17** (via Docker Compose em desenvolvimento)
+- **Zod 4** para validação de formulários e do ambiente
 
-## ✨ **Sobre o Projeto**
+## Afinador em tempo real
 
-**SongCraft AI** é uma plataforma revolucionária que utiliza inteligência artificial para transcrever músicas e criar experiências de aprendizado musical personalizadas. Nossa missão é democratizar o ensino de música, tornando possível que qualquer pessoa aprenda suas músicas favoritas de forma eficiente e divertida.
+No Modo Prática (`/dashboard/practice`), o card **Afinador** usa o microfone
+para mostrar a nota tocada ou cantada, a frequência, o desvio em cents
+(±50), um ponteiro e a forma de onda ao vivo. Dentro de ±5 cents a nota
+aparece como "Afinado".
 
-### 🎯 **Problema que Resolvemos**
+- **Tudo roda no navegador.** O áudio não é gravado nem enviado a servidor
+  algum, e não há custo de API ou de IA.
+- **Algoritmo:** YIN (de Cheveigné & Kawahara, 2002) em TypeScript puro, em
+  `src/lib/audio/pitch.ts`, com faixa de 60 Hz a 1500 Hz e referência
+  A4 = 440 Hz. A leitura passa por uma mediana curta para não oscilar.
+- **Microfone:** `getUserMedia` com cancelamento de eco, supressão de ruído
+  e ganho automático desligados, porque eles distorcem a altura do som.
+  Permissão negada, falta de microfone e navegador sem suporte (é preciso
+  HTTPS ou `localhost`) mostram mensagens próprias. O microfone é liberado
+  ao parar e ao sair da página.
+- **Limites:** detecta uma nota por vez (monofônico); acordes e notas abaixo
+  de 60 Hz (como a corda Si de um baixo de 5 cordas) não são suportados. Os
+  dados de progresso ao redor do afinador continuam fictícios.
 
-- **Transcricões caras** e demoradas
-- **Falta de personalização** no ensino musical
-- **Barreiras de entrada** para novos músicos
-- **Ausência de feedback** em tempo real
-- **Dificuldade em encontrar** material do nível correto
+## Como rodar localmente
 
-### 🚀 **Nossa Solução**
-
-Uma plataforma completa que combina:
-
-- **IA de Transcrição** (Magenta.js + TensorFlow)
-- **Aprendizado Adaptativo** baseado no progresso do usuário
-- **Interface Interativa** com feedback em tempo real
-- **Multi-instrumentos** (piano, violão, expansão futura)
-- **Gamificação** para manter engajamento
-
----
-
-## 🎮 **Demo Rápido**
-
-```bash
-# Experimente localmente em 3 minutos
-git clone https://github.com/songcraft-ai/songcraft-ai.git
-cd songcraft-ai
-npm install && npm run dev
-# Abra http://localhost:3000
-```
-
-### 📱 **Screenshots**
-
-<details>
-<summary>🖼️ Ver Interfaces</summary>
-
-|             Landing Page              |                 Dashboard                 |                    Transcrição                    |
-| :-----------------------------------: | :---------------------------------------: | :-----------------------------------------------: |
-| ![Landing](./docs/images/landing.png) | ![Dashboard](./docs/images/dashboard.png) | ![Transcription](./docs/images/transcription.png) |
-
-|                 Prática                 |                Progresso                |              Configurações              |
-| :-------------------------------------: | :-------------------------------------: | :-------------------------------------: |
-| ![Practice](./docs/images/practice.png) | ![Progress](./docs/images/progress.png) | ![Settings](./docs/images/settings.png) |
-
-</details>
-
----
-
-## 🛠️ **Tech Stack**
-
-### **Frontend**
-
-- **Framework**: Next.js 15 (App Router)
-- **Language**: TypeScript 5.0
-- **Styling**: Tailwind CSS 3.4
-- **Components**: Radix UI
-- **Animations**: Framer Motion
-- **State**: Zustand + SWR
-
-### **Backend**
-
-- **API**: Next.js API Routes
-- **Database**: PostgreSQL + Prisma ORM
-- **Auth**: NextAuth.js + Google OAuth
-- **Payments**: Stripe Integration
-- **Storage**: Vercel Blob
-
-### **AI & Music**
-
-- **Transcription**: Magenta.js (Google AI)
-- **Audio Processing**: Tone.js + Web Audio API
-- **Sheet Music**: VexFlow
-- **Music Theory**: Tonal.js
-- **ML Models**: TensorFlow.js
-
-### **DevOps & Tools**
-
-- **Deploy**: Vercel
-- **Database**: Railway/Supabase
-- **Monitoring**: Sentry + Analytics
-- **Testing**: Jest + Cypress
-- **CI/CD**: GitHub Actions
-
----
-
-## 🚀 **Quick Start**
-
-### **Pré-requisitos**
-
-- Node.js 18+
-- PostgreSQL 14+
-- Conta Google Cloud (para OAuth)
-
-### **Instalação Local**
+Pré-requisitos: Node.js 20.9+, Yarn 1 (classic) e Docker com Docker Compose.
 
 ```bash
-# 1. Clone e instale dependências
-git clone https://github.com/songcraft-ai/songcraft-ai.git
-cd songcraft-ai
-npm install
+# 1. Dependências
+yarn install
 
-# 2. Configure ambiente
-cp .env.example .env.local
-# Edite .env.local com suas configurações
+# 2. Variáveis de ambiente
+cp .env.example .env
+# Gere um AUTH_SECRET real (o placeholder do exemplo é recusado na inicialização):
+npx auth secret        # ou: openssl rand -base64 32
 
-# 3. Configure o banco
-npx prisma generate
-npx prisma db push
-npm run db:seed  # Dados de exemplo
-
-# 4. Execute o projeto
-npm run dev
+# 3. Sobe o Postgres, espera ficar pronto, aplica as migrations e inicia o Next
+yarn dev
 ```
 
-### **Configuração Essencial**
+Acesse http://localhost:3000, crie uma conta em `/signup` e entre em `/signin`.
+
+O `yarn dev` executa, em sequência, `database:up` → `wait-for-postgres` →
+`prisma migrate dev` e depois `next dev` (via `postdev`).
+
+> Se você já tinha um volume local criado com a imagem antiga
+> `bitnami/postgresql`, remova-o uma vez (`docker compose down -v`), pois o
+> diretório de dados da imagem oficial do Postgres é diferente.
+
+### Variáveis de ambiente
+
+Todas estão documentadas em [`.env.example`](./.env.example):
+
+| Variável | Uso |
+| --- | --- |
+| `DATABASE_URL` | Conexão do Prisma (`postgresql://...`) |
+| `POSTGRES_*` | Usuário, senha, banco, host e porta do container local |
+| `AUTH_SECRET` | Segredo do Auth.js (mínimo 32 caracteres, nunca commitar) |
+| `SKIP_ENV_VALIDATION` | Opcional. `1` pula a validação do ambiente; só para ferramentas como um `next build` em CI sem segredos |
+
+## Scripts
+
+| Comando | O que faz |
+| --- | --- |
+| `yarn dev` | Sobe o banco, aguarda, roda migrations e inicia `next dev` |
+| `yarn build` | Build de produção do Next.js |
+| `yarn start` | Serve o build de produção |
+| `yarn typecheck` | Gera os tipos de rotas do Next (`next typegen`) e roda `tsc --noEmit` |
+| `yarn lint` | ESLint em todo o projeto |
+| `yarn test` / `yarn test:watch` | Testes unitários com Vitest (uma vez / modo watch) |
+| `yarn test:e2e` | Testes end-to-end com Playwright (faz `next build` + `next start` na porta 3100) |
+| `yarn prisma:migrate:dev` | `prisma migrate dev` |
+| `yarn database:up` / `database:stop` / `database:down` | Controla o container do Postgres |
+| `yarn wait-for-postgres` | Aguarda o container aceitar conexões |
+
+## Testes
+
+Os testes **não precisam de banco de dados** nem de `.env`.
 
 ```bash
-# .env.local
-DATABASE_URL="postgresql://user:pass@localhost:5432/songcraft_ai"
-NEXTAUTH_SECRET="your-super-secure-secret"
-GOOGLE_CLIENT_ID="your-google-oauth-client-id"
-GOOGLE_CLIENT_SECRET="your-google-oauth-secret"
+yarn test                            # unitários (Vitest)
+npx playwright install chromium      # uma vez, baixa o navegador
+yarn test:e2e                        # end-to-end (Playwright)
 ```
 
-> 📖 **Guia completo**: [Documentação de Setup](./docs/setup.md)
+- **Unitários** (`*.test.ts(x)` ao lado do código): o detector de notas
+  (`src/lib/audio/pitch.test.ts`, com senoides sintetizadas das cordas do
+  violão, tons com harmônicos, ruído e silêncio), o componente do afinador
+  (Web Audio API falsa, permissão negada, liberação do microfone), schemas
+  Zod de login e cadastro, a lógica do `authorize`
+  (`src/lib/auth/authorize-credentials.ts`, com o repositório de usuários
+  mockado), as regras de acesso de rotas
+  (`getRouteRedirect` em `routes.ts`), a validação do ambiente
+  (`infra/env.ts`), `cn` e os banners de erro/sucesso dos formulários (jsdom
+  + Testing Library).
+- **E2E** (`e2e/`): a landing page renderiza e leva a `/signin` e
+  `/signup`; os formulários mostram os erros de validação devolvidos pelas
+  server actions; visitantes sem sessão que abrem `/dashboard` vão para
+  `/signin`; o afinador recebe um tom G3 gerado como microfone falso do
+  Chromium e mostra G3 / 196 Hz / "Afinado". O servidor de teste recebe
+  variáveis descartáveis e um `DATABASE_URL` apontando para uma porta
+  fechada. Telas protegidas são abertas com um cookie de sessão JWT assinado
+  com o segredo de teste (`e2e/support/session.ts`), sem passar pelo login.
+  Por isso **cadastro e login com sucesso não são testados** ainda.
 
----
+Requisitos: o Vitest 5 exige **Node.js 22.12+** (a app em si roda com 20.9+).
+No Windows, rode os testes num terminal cujo diretório atual use a letra do
+drive em maiúscula (`C:\...`); com `c:\...` o Vitest carrega o projeto duas
+vezes e as suítes falham com `Cannot read properties of undefined`.
 
-## 📁 **Estrutura do Projeto**
+## CI/CD
+
+Fluxo de branches: todo trabalho entra em `staging`; `main` só recebe
+merges revisados de `staging` e representa produção.
+
+- **CI** (`.github/workflows/ci.yml`), em todo push e pull request para
+  `main` e `staging`, com Node 22 e cache do Yarn:
+  - job de checks: `yarn lint`, `yarn typecheck`, `yarn test` e
+    `yarn build` (com variáveis descartáveis; o build não acessa o banco);
+  - job de e2e: instala o Chromium e roda `yarn test:e2e`; se falhar, o
+    relatório do Playwright fica disponível como artifact por 7 dias.
+- **Deploy** (`.github/workflows/deploy.yml`), chamado pelo CI só depois que
+  os dois jobs passam, e só em push:
+  - `staging` → deploy de preview na Vercel, ambiente `staging` do GitHub;
+  - `main` → deploy de produção na Vercel, ambiente `production`.
+  - Enquanto `VERCEL_TOKEN`, `VERCEL_ORG_ID` e `VERCEL_PROJECT_ID` não
+    estiverem nos secrets do repositório (ou dos ambientes), o job apenas
+    emite um aviso e termina sem deploy. **Hoje nenhum deploy é feito.**
+  - As variáveis da aplicação (`DATABASE_URL`, `AUTH_SECRET`) vêm das
+    configurações do projeto na Vercel, não do repositório; sem elas o build
+    falha na validação de `infra/env.ts`.
+- **Dependabot** (`.github/dependabot.yml`): PRs semanais de npm
+  (minor/patch agrupados) e mensais de GitHub Actions, com destino
+  `staging`. O GitHub só lê esse arquivo na branch padrão, então ele passa a
+  valer depois do primeiro merge em `main`.
+
+## Arquitetura
 
 ```
-songcraft-ai/
-├── 📂 app/                    # Next.js App Router
-│   ├── 📂 (auth)/             # Páginas de autenticação
-│   ├── 📂 (dashboard)/        # Dashboard protegido
-│   ├── 📂 (landing)/          # Marketing pages
-│   └── 📂 api/                # API routes
-├── 📂 components/             # Componentes React reutilizáveis
-│   ├── 📂 ui/                 # Componentes base (Radix UI)
-│   ├── 📂 transcription/      # Funcionalidades de transcrição
-│   └── 📂 music/              # Componentes musicais específicos
-├── 📂 lib/                    # Utilitários e configurações
-│   ├── 📂 audio/              # Processamento de áudio
-│   ├── 📂 music/              # Teoria musical e renderização
-│   └── 📂 database/           # Configuração do Prisma
-├── 📂 hooks/                  # Custom React hooks
-├── 📂 prisma/                 # Schema e migrações
-├── 📂 public/                 # Assets estáticos
-└── 📂 docs/                   # Documentação
+auth.ts / auth.config.ts   Auth.js: provider Credentials, callbacks jwt/session, Prisma adapter
+routes.ts                  Rotas públicas/de auth e getRouteRedirect (regras de acesso)
+infra/
+  env.ts                   Validação das variáveis de ambiente (Zod)
+  database.ts              PrismaClient singleton
+  scripts/                 wait-for-postgres
+prisma/                    schema.prisma (User, Account) e migrations
+src/
+  proxy.ts                 Redireciona visitantes e usuários logados conforme routes.ts
+  lib/auth/                authorizeCredentials (checagem de e-mail e senha do login)
+  lib/audio/               Detecção de notas (YIN) e conversão frequência → nota/cents
+  actions/                 Server Actions: signin-user, signup-user, logout-user
+  schemas/                 Schemas Zod dos formulários de auth
+  repositories/            Acesso a dados (getUserByEmail, getUserById)
+  app/
+    (auth)/                signin, signup, forgot-password
+    (protected)/dashboard  Telas do dashboard (protótipos com dados fixos, exceto o afinador)
+    api/auth/[...nextauth] Handlers do Auth.js
+  components/              UI (ui/ = componentes base, auth/, home/, layouts/, practice/tuner)
+  providers/               Layout protegido (sidebar) e tema
+e2e/                       Testes end-to-end (Playwright) e helpers em e2e/support
+.github/                   Workflows de CI e deploy, Dependabot
 ```
 
----
+Fluxo de login: o formulário chama a server action `handleSigninUser`, que
+valida com Zod e chama `signIn("credentials")`. O `authorize` busca o usuário
+pelo e-mail (normalizado em minúsculas), compara a senha com bcrypt e devolve
+apenas os dados públicos do perfil. O callback `jwt` adiciona o papel do
+usuário ao token e o `session` o expõe na sessão.
 
-## 🎯 **Funcionalidades Principais**
+A pasta `docs/` contém notas de planejamento antigas (setup com Google OAuth,
+lista de telas planejadas) que **não** refletem o código atual.
 
-### ✅ **Implementado**
+## Licença
 
-#### 🎵 **Core Features**
-
-- [x] **Transcrição de Áudio** - IA converte MP3/WAV para partitura
-- [x] **3 Níveis de Dificuldade** - Simplificação automática
-- [x] **Interface de Prática** - Player com controles profissionais
-- [x] **Feedback em Tempo Real** - Análise de performance ao vivo
-- [x] **Biblioteca de Músicas** - Organização e busca avançada
-- [x] **Sistema de Progresso** - Analytics detalhado do aprendizado
-
-#### 🔐 **Usuários & Auth**
-
-- [x] **Google OAuth** - Login social seguro
-- [x] **Gestão de Perfil** - Configurações personalizáveis
-- [x] **Níveis de Usuário** - Iniciante/Intermediário/Avançado
-- [x] **Planos de Assinatura** - Free/Pro/Studio
-
-#### 📊 **Analytics & Gamificação**
-
-- [x] **Dashboard Interativo** - Métricas de progresso visual
-- [x] **Sistema de Conquistas** - Badges e milestones
-- [x] **Relatórios Semanais** - Insights de performance
-- [x] **Metas Personalizadas** - Definição de objetivos
-
-### 🔄 **Em Desenvolvimento**
-
-- [ ] **Input MIDI Real-time** - Conexão com teclados físicos
-- [ ] **Modo Colaborativo** - Prática em grupo
-- [ ] **App Mobile** - React Native companion
-- [ ] **API Pública** - Integrações de terceiros
-
-### 🌟 **Roadmap Futuro**
-
-- [ ] **Voice Coaching** - IA para correção vocal
-- [ ] **AR Practice Mode** - Realidade aumentada
-- [ ] **Blockchain Certificates** - Certificados verificáveis
-- [ ] **Multi-idiomas** - Expansão internacional
-
----
-
-## 🤝 **Como Contribuir**
-
-Adoramos contribuições! Veja nosso [Guia de Contribuição](./CONTRIBUTING.md) para começar.
-
-### **Formas de Contribuir**
-
-- 🐛 **Reportar bugs** via Issues
-- 💡 **Sugerir features** no Discussions
-- 🔧 **Submeter PRs** com melhorias
-- 📚 **Melhorar documentação**
-- 🎨 **Design e UX** feedback
-- 🧪 **Testing** e quality assurance
-
-### **Development Setup**
-
-```bash
-# Fork do repositório
-git fork https://github.com/songcraft-ai/songcraft-ai.git
-
-# Clone seu fork
-git clone https://github.com/SEU-USERNAME/songcraft-ai.git
-cd songcraft-ai
-
-# Instale dependências
-npm install
-
-# Crie uma branch para sua feature
-git checkout -b feature/minha-feature-incrivel
-
-# Faça suas modificações e commit
-git commit -m "feat: adiciona feature incrível"
-
-# Push e abra PR
-git push origin feature/minha-feature-incrivel
-```
-
-### **Code Guidelines**
-
-- ✅ **TypeScript first** - Type safety em tudo
-- ✅ **Conventional Commits** - Padronização de commits
-- ✅ **ESLint + Prettier** - Code style consistente
-- ✅ **Component-driven** - Componentes reutilizáveis
-- ✅ **Mobile-first** - Responsive design
-- ✅ **Accessibility** - WCAG compliance
-
----
-
-## 📖 **Documentação**
-
-- 📘 [**Setup Guide**](./docs/setup.md) - Configuração completa do ambiente
-- 🏗️ [**Architecture**](./docs/architecture.md) - Visão técnica do sistema
-- 🎵 [**Music Engine**](./docs/music-engine.md) - Como funciona a IA
-- 🔌 [**API Reference**](./docs/api.md) - Documentação das APIs
-- 🎨 [**Design System**](./docs/design-system.md) - Guia de componentes
-- 🚀 [**Deploy Guide**](./docs/deploy.md) - Como fazer deploy
-
----
-
-## 🌟 **Community & Support**
-
-### **Canais Oficiais**
-
-- 💬 [**Discord**](https://discord.gg/songcraftai) - Comunidade ativa
-- 🐦 [**Twitter**](https://twitter.com/songcraftai) - Updates e novidades
-- 📺 [**YouTube**](https://youtube.com/@songcraftai) - Tutoriais e demos
-- 📧 [**Email**](mailto:hello@songcraft.ai) - Suporte direto
-
-### **Para Desenvolvedores**
-
-- 🔧 [**GitHub Issues**](https://github.com/songcraft-ai/songcraft-ai/issues) - Bugs e features
-- 💡 [**Discussions**](https://github.com/songcraft-ai/songcraft-ai/discussions) - Ideias e dúvidas
-- 📊 [**Project Board**](https://github.com/orgs/songcraft-ai/projects) - Roadmap público
-
----
-
-## 📊 **Stats & Métricas**
-
-<div align="center">
-
-![GitHub stars](https://img.shields.io/github/stars/songcraft-ai/songcraft-ai?style=social)
-![GitHub forks](https://img.shields.io/github/forks/songcraft-ai/songcraft-ai?style=social)
-![GitHub issues](https://img.shields.io/github/issues/songcraft-ai/songcraft-ai)
-![GitHub PRs](https://img.shields.io/github/issues-pr/songcraft-ai/songcraft-ai)
-
-</div>
-
-### **Métricas de Qualidade**
-
-- ✅ **Type Coverage**: 100%
-- ✅ **Test Coverage**: 85%+
-- ✅ **Lighthouse Score**: 95+
-- ✅ **Bundle Size**: < 300KB
-- ✅ **Performance**: < 3s First Load
-
-### **Community Impact**
-
-- 🎵 **1.000+** usuários ativos
-- 🎹 **10.000+** músicas transcritas
-- ⭐ **4.8/5** rating médio
-- 🌍 **15** países atendidos
-
----
-
-## 💰 **Business Model**
-
-### **Planos de Preços**
-
-|      **Free**      |      **Pro**      |  **Studio**   |
-| :----------------: | :---------------: | :-----------: |
-|   3 músicas/mês    |     Ilimitado     | Tudo do Pro + |
-| Transcrição básica |  Todos recursos   |  API Access   |
-|   Suporte email    | Exportar PDF/MIDI | Team features |
-|      **R$ 0**      |   **R$ 29/mês**   | **R$ 59/mês** |
-
-### **Revenue Streams**
-
-1. **Subscriptions** (85%) - Receita recorrente principal
-2. **API Usage** (10%) - Integrações B2B
-3. **Partnerships** (5%) - Escolas e instituições
-
----
-
-## 🏆 **Awards & Recognition**
-
-<div align="center">
-
-🥇 **Best Music AI Tool 2024** - TechCrunch Disrupt  
-🎖️ **Innovation Award** - Music & Sound Awards  
-⭐ **Top 10 EdTech** - Product Hunt  
-🏅 **Developer's Choice** - GitHub Stars
-
-</div>
-
----
-
-## 📄 **License**
-
-Este projeto está licenciado sob a [MIT License](./LICENSE) - veja o arquivo de licença para detalhes.
-
-### **Third-party Licenses**
-
-- [Magenta.js](https://github.com/magenta/magenta-js) - Apache 2.0
-- [VexFlow](https://github.com/0xfe/vexflow) - MIT
-- [Radix UI](https://github.com/radix-ui/primitives) - MIT
-
----
-
-## 🙏 **Agradecimentos**
-
-Agradecemos especial a:
-
-- **Google Magenta Team** - Pelos modelos de IA musical
-- **Vercel Team** - Pela plataforma incrível
-- **Open Source Community** - Por todas as libraries
-- **Beta Testers** - Pelos feedbacks valiosos
-- **Contributors** - Por tornarem isso possível
-
----
-
-## 📞 **Contact**
-
-**SongCraft AI Team**
-
-- 🌐 **Website**: [songcraft.ai](https://songcraft.ai)
-- 📧 **Email**: hello@songcraft.ai
-- 💬 **Discord**: [Comunidade](https://discord.gg/songcraftai)
-- 🐦 **Twitter**: [@songcraftai](https://twitter.com/songcraftai)
-
-**Business Inquiries**: business@songcraft.ai  
-**Press Kit**: [Media Resources](https://songcraft.ai/press)
-
----
-
-<div align="center">
-
-**Feito com ❤️ por músicos, para músicos**
-
-⭐ **Star o projeto** se ele te ajudou!
-
-[⬆️ Voltar ao topo](#-songcraft-ai)
-
-</div>
+[MIT](./LICENSE)

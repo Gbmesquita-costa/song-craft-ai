@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState, useEffect } from "react";
+import { useActionState, useState } from "react";
 import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
@@ -36,17 +36,22 @@ import { handleSignUpUser } from "@/actions/signup-user";
 import { ErrorForm } from "../error-form";
 import { SuccessForm } from "../success-form";
 
+// Module-level so the reference is stable: the form compares state by identity.
+const DEFAULT_STATE: SignUpFormState = {};
+
+const INITIAL_FORM_VALUES = {
+  name: "",
+  email: "",
+  password: "",
+  confirmPassword: "",
+};
+
 const SignUpContainer = ({ state, isPending }: SignUpFormContainerProps) => {
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [showConfirmPassword, setShowConfirmPassword] =
     useState<boolean>(false);
 
-  const [formValues, setFormValues] = useState({
-    name: "",
-    email: "",
-    password: "",
-    confirmPassword: "",
-  });
+  const [formValues, setFormValues] = useState(INITIAL_FORM_VALUES);
 
   const handleInputChange =
     (field: string) => (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -56,21 +61,26 @@ const SignUpContainer = ({ state, isPending }: SignUpFormContainerProps) => {
       }));
     };
 
-  useEffect(() => {
+  // Reset the fields once per successful submission. Derived during render
+  // (React's "storing information from previous renders" pattern) instead of
+  // in an effect, which would trigger an extra cascading render.
+  const [prevState, setPrevState] = useState(state);
+  if (state !== prevState) {
+    setPrevState(state);
     if (state?.successMessage) {
-      setFormValues({
-        name: "",
-        email: "",
-        password: "",
-        confirmPassword: "",
-      });
+      setFormValues(INITIAL_FORM_VALUES);
     }
-  }, [state?.successMessage]);
+  }
 
   return (
     <div className="space-y-4">
       {/* Google Sign Up */}
-      <Button className="w-full h-11" variant="outline" disabled={isPending}>
+      <Button
+        type="button"
+        className="w-full h-11"
+        variant="outline"
+        disabled={isPending}
+      >
         {false ? (
           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
         ) : (
@@ -257,8 +267,6 @@ const SignUpContainer = ({ state, isPending }: SignUpFormContainerProps) => {
 };
 
 const SignUp = () => {
-  // Default value for state
-  const defaultState: SignUpFormState = {};
   const [state, formAction, isPending] = useActionState(handleSignUpUser, null);
 
   const previewFeaturesMobile = [
@@ -311,7 +319,7 @@ const SignUp = () => {
           {/* Email Form */}
           <form action={formAction}>
             <SignUpContainer
-              state={state ?? defaultState}
+              state={state ?? DEFAULT_STATE}
               isPending={isPending}
             />
           </form>

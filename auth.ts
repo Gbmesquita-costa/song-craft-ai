@@ -4,6 +4,7 @@ import "next-auth/jwt";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 
 import { db } from "./infra/database";
+import { env } from "./infra/env";
 import authConfig from "./auth.config";
 
 import { getUserById } from "@/repositories/user";
@@ -61,5 +62,6 @@ export const {
   },
   adapter: PrismaAdapter(db),
   session: { strategy: "jwt" },
+  secret: env.AUTH_SECRET,
   ...authConfig,
 });

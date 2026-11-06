@@ -6,7 +6,10 @@ import { db } from "@/../infra/database";
 import { signupUserSchema } from "@/schemas/signup-user-schema";
 import { getUserByEmail } from "@/repositories/user";
 
-const handleSignUpUser = async (state: any, signUpValues: FormData) => {
+const handleSignUpUser = async (
+  _prevState: unknown,
+  signUpValues: FormData
+) => {
   const signupUserValues = Object.fromEntries(signUpValues.entries());
   const signupValidation = signupUserSchema.safeParse(signupUserValues);
 
@@ -43,7 +46,7 @@ const handleSignUpUser = async (state: any, signUpValues: FormData) => {
     return {
       successMessage: "Conta criada com sucesso!",
     };
-  } catch (error) {
+  } catch {
     return {
       signupUserError: {
         signUpUserErrorMessage:

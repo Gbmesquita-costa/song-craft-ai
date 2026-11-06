@@ -108,7 +108,7 @@ const Testimonials = () => {
 
                   {/* Text */}
                   <p className="text-gray-700 mb-6 leading-relaxed">
-                    "{testimonial.text}"
+                    &quot;{testimonial.text}&quot;
                   </p>
 
                   <div className="mt-auto">
@@ -118,7 +118,7 @@ const Testimonials = () => {
                       border-purple-200 rounded-lg p-3 mb-4"
                     >
                       <p className="text-sm font-medium text-purple-700">
-                        💜 "{testimonial.highlight}"
+                        💜 &quot;{testimonial.highlight}&quot;
                       </p>
                     </div>
 

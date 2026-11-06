@@ -1,7 +1,6 @@
 "use client";
 
-import { useActionState, useState, useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useActionState, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -34,13 +33,18 @@ import { SignInFormContainerProps, SignInFormState } from "./dto";
 import { ErrorForm } from "../error-form";
 import { handleSigninUser } from "@/actions/signin-user";
 
+// Module-level so the reference is stable: the form compares state by identity.
+const DEFAULT_STATE: SignInFormState = {};
+
+const INITIAL_FORM_VALUES = {
+  email: "",
+  password: "",
+};
+
 const SignInContainer = ({ state, isPending }: SignInFormContainerProps) => {
   const [showPassword, setShowPassword] = useState<boolean>(false);
 
-  const [formValues, setFormValues] = useState({
-    email: "",
-    password: "",
-  });
+  const [formValues, setFormValues] = useState(INITIAL_FORM_VALUES);
 
   const handleInputChange =
     (field: string) => (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -50,19 +54,26 @@ const SignInContainer = ({ state, isPending }: SignInFormContainerProps) => {
       }));
     };
 
-  useEffect(() => {
+  // Reset the fields once per successful submission. Derived during render
+  // (React's "storing information from previous renders" pattern) instead of
+  // in an effect, which would trigger an extra cascading render.
+  const [prevState, setPrevState] = useState(state);
+  if (state !== prevState) {
+    setPrevState(state);
     if (state?.successMessage) {
-      setFormValues({
-        email: "",
-        password: "",
-      });
+      setFormValues(INITIAL_FORM_VALUES);
     }
-  }, [state?.successMessage]);
+  }
 
   return (
     <div className="space-y-4">
       {/* Google Sign In */}
-      <Button className="w-full h-11" variant="outline" disabled={isPending}>
+      <Button
+        type="button"
+        className="w-full h-11"
+        variant="outline"
+        disabled={isPending}
+      >
         {false ? (
           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
         ) : (
@@ -184,14 +195,6 @@ const SignInContainer = ({ state, isPending }: SignInFormContainerProps) => {
 };
 
 const SignIn = () => {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-
-  const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
-  const error = searchParams.get("error");
-
-  // Default value for state
-  const defaultState: SignInFormState = {};
   const [state, formAction, isPending] = useActionState(handleSigninUser, null);
 
   return (
@@ -239,7 +242,7 @@ const SignIn = () => {
           {/* Email Form */}
           <form action={formAction}>
             <SignInContainer
-              state={state ?? defaultState}
+              state={state ?? DEFAULT_STATE}
               isPending={isPending}
             />
           </form>

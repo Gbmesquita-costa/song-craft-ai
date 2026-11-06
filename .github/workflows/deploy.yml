@@ -1,0 +1,76 @@
+name: Deploy
+
+# Called by ci.yml once every check has passed for a push to staging or main:
+#   staging -> Vercel preview deployment,    GitHub environment "staging"
+#   main    -> Vercel production deployment, GitHub environment "production"
+# It is a reusable workflow rather than a `workflow_run` trigger because
+# `workflow_run` only fires for workflow files that exist on the default branch.
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-${{ github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Vercel (${{ github.ref_name == 'main' && 'production' || 'staging' }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: ${{ github.ref_name == 'main' && 'production' || 'staging' }}
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+      VERCEL_ENV: ${{ github.ref_name == 'main' && 'production' || 'preview' }}
+      VERCEL_CLI: vercel@65.12.1
+    steps:
+      # Secrets cannot be referenced in `if:`, so check them in a step and
+      # skip the rest cleanly instead of failing the pipeline.
+      - name: Check Vercel credentials
+        id: gate
+        run: |
+          if [ -z "$VERCEL_TOKEN" ] || [ -z "$VERCEL_ORG_ID" ] || [ -z "$VERCEL_PROJECT_ID" ]; then
+            echo "::notice title=Deploy skipped::VERCEL_TOKEN, VERCEL_ORG_ID or VERCEL_PROJECT_ID is not set for this environment."
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - if: steps.gate.outputs.enabled == 'true'
+        uses: actions/checkout@v7
+
+      - if: steps.gate.outputs.enabled == 'true'
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: yarn
+
+      # Runtime env vars (DATABASE_URL, AUTH_SECRET, ...) come from the
+      # Vercel project settings, not from this repository.
+      - if: steps.gate.outputs.enabled == 'true'
+        name: Pull Vercel project settings
+        run: npx --yes "$VERCEL_CLI" pull --yes --environment="$VERCEL_ENV" --token="$VERCEL_TOKEN"
+
+      - if: steps.gate.outputs.enabled == 'true'
+        name: Build
+        run: |
+          if [ "$VERCEL_ENV" = "production" ]; then
+            npx --yes "$VERCEL_CLI" build --prod --token="$VERCEL_TOKEN"
+          else
+            npx --yes "$VERCEL_CLI" build --token="$VERCEL_TOKEN"
+          fi
+
+      - if: steps.gate.outputs.enabled == 'true'
+        name: Deploy
+        run: |
+          if [ "$VERCEL_ENV" = "production" ]; then
+            url=$(npx --yes "$VERCEL_CLI" deploy --prebuilt --prod --token="$VERCEL_TOKEN")
+          else
+            url=$(npx --yes "$VERCEL_CLI" deploy --prebuilt --token="$VERCEL_TOKEN")
+          fi
+          echo "Deployed to $url"
+          echo "### Deployed to $VERCEL_ENV: $url" >> "$GITHUB_STEP_SUMMARY"
