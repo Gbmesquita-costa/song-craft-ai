@@ -33,9 +33,9 @@ When tests are added, run them before committing as well.
 ## Where things live
 
 - `auth.ts` – Auth.js instance (Prisma adapter, JWT session, jwt/session callbacks)
-- `auth.config.ts` – edge-safe config with the Credentials provider (also used by the middleware)
+- `auth.config.ts` – edge-safe config with the Credentials provider (also used by the proxy)
 - `routes.ts` – public routes, auth routes, API auth prefix, default redirect
-- `src/middleware.ts` – route protection
+- `src/proxy.ts` – route protection (Next 16 proxy, formerly middleware)
 - `src/actions/<name>/index.ts` – Server Actions (`"use server"`)
 - `src/schemas/<name>/index.ts` – Zod schemas shared by actions and auth
 - `src/repositories/` – Prisma queries

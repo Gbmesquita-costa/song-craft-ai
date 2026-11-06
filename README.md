@@ -17,7 +17,7 @@ progresso.
 | Cadastro (`/signup`) | Implementado: validação com Zod, senha com bcrypt, usuário salvo no Postgres via Prisma |
 | Login (`/signin`) | Implementado: Auth.js (NextAuth v5) com provider Credentials e sessão JWT |
 | Logout | Implementado (server action) |
-| Proteção de rotas | Implementada no `src/middleware.ts` (rotas públicas, de auth e protegidas em `routes.ts`) |
+| Proteção de rotas | Implementada no `src/proxy.ts` (rotas públicas, de auth e protegidas em `routes.ts`) |
 | Papel do usuário (`ADMIN`/`USER`) | Salvo no banco e propagado para o JWT e a sessão; ainda não há tela que dependa dele |
 | Validação de variáveis de ambiente | Implementada com Zod em `infra/env.ts`; a app não sobe com `.env` inválido |
 | Recuperar senha (`/forgot-password`) | **Não implementado**: a página informa isso; não existe token de reset nem envio de e-mail |
@@ -98,7 +98,7 @@ infra/
   scripts/                 wait-for-postgres
 prisma/                    schema.prisma (User, Account) e migrations
 src/
-  middleware.ts            Redireciona visitantes e usuários logados conforme routes.ts
+  proxy.ts                 Redireciona visitantes e usuários logados conforme routes.ts
   actions/                 Server Actions: signin-user, signup-user, logout-user
   schemas/                 Schemas Zod dos formulários de auth
   repositories/            Acesso a dados (getUserByEmail, getUserById)

@@ -17,8 +17,8 @@ Rules for any coding agent (and human) changing this repository.
 
 - Next.js App Router under `src/app`, with route groups `(auth)` and `(protected)`.
 - Auth: Auth.js v5. `auth.config.ts` holds the provider config shared with the
-  middleware; `auth.ts` adds the Prisma adapter and callbacks. Route lists live
-  in `routes.ts`.
+  proxy (`src/proxy.ts`); `auth.ts` adds the Prisma adapter and callbacks.
+  Route lists live in `routes.ts`.
 - Mutations go through Server Actions in `src/actions/<action-name>/index.ts`.
   Validate input with a Zod schema from `src/schemas/<schema-name>/index.ts`
   and return field errors from `error.flatten()` like the existing actions.

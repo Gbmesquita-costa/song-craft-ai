@@ -10,7 +10,7 @@ import {
 
 const { auth } = NextAuth(authConfig);
 
-export default auth((req) => {
+export const proxy = auth((req) => {
   const { nextUrl } = req;
   // On a server/config error Auth.js sets `req.auth` to an error payload
   // instead of null, so only a session carrying a user counts as signed in.
