@@ -1,8 +1,6 @@
-version: "3.8"
-
 services:
   song-craft-database:
-    image: "bitnami/postgresql"
+    image: "postgres:17.11-alpine"
     container_name: song-craft-database
     restart: unless-stopped
     ports:
@@ -15,7 +13,7 @@ services:
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - POSTGRES_DB=${POSTGRES_DATABASE}
     volumes:
-      - postgres_data:/bitnami/postgresql
+      - postgres_data:/var/lib/postgresql/data
     healthcheck:
       test:
         [
