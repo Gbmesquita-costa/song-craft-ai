@@ -18,13 +18,14 @@ docs or commit messages.
 yarn install                 # Yarn 1 (classic); keep yarn.lock, never add package-lock.json
 yarn dev                     # docker Postgres up -> wait -> prisma migrate dev -> next dev
 yarn tsc --noEmit            # type-check (must pass before every commit)
+yarn lint                    # ESLint flat config (must pass before every commit)
 yarn build                   # production build (must pass before every commit)
 yarn prisma:migrate:dev      # create/apply migrations after editing prisma/schema.prisma
 yarn database:up | database:stop | database:down
 ```
 
-There is no ESLint config and no test suite yet; `yarn lint` is not usable.
-When tests are added, run them before committing as well.
+There is no test suite yet. When tests are added, run them before committing
+as well.
 
 `infra/env.ts` validates the environment at import time. Without a valid
 `.env` (copy `.env.example`, generate `AUTH_SECRET`) the build fails; use

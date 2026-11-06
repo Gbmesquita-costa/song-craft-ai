@@ -10,8 +10,9 @@ Rules for any coding agent (and human) changing this repository.
   (`npx auth secret`). `infra/env.ts` rejects missing or placeholder values.
 - Before every commit, all of these must pass:
   - `yarn tsc --noEmit`
+  - `yarn lint`
   - `yarn build`
-  - the lint and test commands, once they exist in `package.json`
+  - the test commands, once they exist in `package.json`
 
 ## Architecture
 

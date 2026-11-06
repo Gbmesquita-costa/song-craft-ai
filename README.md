@@ -26,7 +26,8 @@ progresso.
 | Modo Prática | **Protótipo de UI**, sem áudio ou detecção de notas |
 | Pagamentos | **Não implementado** (o pacote `stripe` está nas dependências, mas não é usado) |
 | Login social (Google etc.) | **Não implementado** |
-| Testes automatizados, lint e CI | **Ainda não configurados** |
+| Lint | ESLint 10 com flat config (`eslint.config.mjs`, regras do `eslint-config-next`) |
+| Testes automatizados e CI | **Ainda não configurados** |
 
 ## Stack
 
@@ -81,11 +82,10 @@ Todas estão documentadas em [`.env.example`](./.env.example):
 | `yarn build` | Build de produção do Next.js |
 | `yarn start` | Serve o build de produção |
 | `yarn tsc --noEmit` | Checagem de tipos |
+| `yarn lint` | ESLint em todo o projeto |
 | `yarn prisma:migrate:dev` | `prisma migrate dev` |
 | `yarn database:up` / `database:stop` / `database:down` | Controla o container do Postgres |
 | `yarn wait-for-postgres` | Aguarda o container aceitar conexões |
-
-`yarn lint` existe no `package.json`, mas o ESLint ainda não está configurado.
 
 ## Arquitetura
 
