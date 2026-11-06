@@ -7,10 +7,11 @@ notes and a quick reference.
 ## Project in one paragraph
 
 SongCraft AI is a Next.js 16 (App Router) + React 19 + TypeScript app. Only
-credentials auth is real (Auth.js v5 + Prisma + Postgres). The dashboard pages
-are UI prototypes with hard-coded data and the transcription flow is simulated
-with timers. Do not describe prototype features as working in code comments,
-docs or commit messages.
+credentials auth (Auth.js v5 + Prisma + Postgres) and the real-time tuner on
+the practice page (microphone + YIN pitch detection in the browser) are real.
+The rest of the dashboard is UI prototypes with hard-coded data and the
+transcription flow is simulated with timers. Do not describe prototype
+features as working in code comments, docs or commit messages.
 
 ## Commands
 
@@ -44,9 +45,12 @@ drive letter (`C:\...`); a lowercase `c:\...` cwd makes every suite fail with
 - `src/schemas/<name>/index.ts` – Zod schemas shared by actions and auth
 - `src/repositories/` – Prisma queries
 - `src/lib/auth/authorize-credentials.ts` – credentials check behind Auth.js `authorize`
-- `e2e/` – Playwright specs; unit tests sit next to the code as `*.test.ts(x)`
+- `src/lib/audio/pitch.ts` – YIN pitch detection and frequency -> note/cents (pure, no browser APIs)
+- `src/components/practice/tuner/` – tuner card and `usePitchDetector` (getUserMedia + Web Audio)
+- `e2e/` – Playwright specs (`e2e/support/` has the JWT session and fake-mic tone helpers); unit tests sit next to the code as `*.test.ts(x)`
+- `.github/workflows/` – `ci.yml` (checks + e2e) calls `deploy.yml` (Vercel, skipped without secrets)
 - `infra/` – env validation, Prisma client, scripts
-- `src/app/(protected)/_components/` – dashboard screens (prototypes)
+- `src/app/(protected)/_components/` – dashboard screens (prototypes, except the tuner card)
 
 ## Working notes
 

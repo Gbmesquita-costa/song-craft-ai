@@ -30,7 +30,16 @@ Rules for any coding agent (and human) changing this repository.
 - Tests: unit tests sit next to the code as `*.test.ts(x)` (Vitest, Node by
   default, `// @vitest-environment jsdom` for components); e2e specs live in
   `e2e/`. Neither may need a real database: mock `@/repositories/*` in unit
-  tests and only exercise paths that stop before Prisma in e2e.
+  tests and only exercise paths that stop before Prisma in e2e. For UI behind
+  the proxy, sign in with `signInWithSessionCookie` from
+  `e2e/support/session.ts` instead of the login form.
+- CI (`.github/workflows/ci.yml`) runs lint, typecheck, unit tests, build and
+  e2e on every push/PR to `main` and `staging`, then calls
+  `.github/workflows/deploy.yml` (Vercel; skipped while its secrets are not
+  set). Keep these checks green; do not weaken them to make a change pass.
+- Audio code: pure signal processing lives in `src/lib/audio` with no browser
+  APIs, so it can be tested on synthesized buffers; Web Audio and
+  `getUserMedia` stay in hooks/components (see `src/components/practice/tuner`).
 - Read environment variables through `env` from `infra/env.ts`, and add every
   new variable to both the Zod schema there and `.env.example`.
 
@@ -46,8 +55,8 @@ Rules for any coding agent (and human) changing this repository.
 - Never return or log password hashes or other secrets; `authorize` returns
   only public profile fields.
 - Mark mocked or simulated behavior clearly (the dashboard data and the
-  transcription flow are currently prototypes). Docs must not claim features
-  that the code does not implement.
+  transcription flow are currently prototypes; the practice tuner is real).
+  Docs must not claim features that the code does not implement.
 
 ## Commits and branches
 

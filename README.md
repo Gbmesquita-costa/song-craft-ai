@@ -5,9 +5,11 @@ estudo: transcrição, biblioteca de músicas, modo prática e acompanhamento de
 progresso.
 
 > **Estado atual:** o projeto está no início. Autenticação por e-mail e senha
-> funciona de ponta a ponta com Postgres; as telas do dashboard são protótipos
-> de interface com dados fixos e a transcrição é **simulada**. A seção
-> [O que está implementado](#o-que-está-implementado) detalha cada parte.
+> funciona de ponta a ponta com Postgres e o **afinador em tempo real** do Modo
+> Prática é real (microfone + detecção de notas no navegador). As demais telas
+> do dashboard são protótipos de interface com dados fixos e a transcrição é
+> **simulada**. A seção [O que está implementado](#o-que-está-implementado)
+> detalha cada parte.
 
 ## O que está implementado
 
@@ -23,12 +25,13 @@ progresso.
 | Recuperar senha (`/forgot-password`) | **Não implementado**: a página informa isso; não existe token de reset nem envio de e-mail |
 | Dashboard, Minhas Músicas, Progresso, Configurações | **Protótipo de UI** com dados fixos definidos nos próprios componentes (ex.: `mockData`, `mockSongs`); nada é lido ou salvo no banco |
 | Nova Transcrição | **Simulada**: o arquivo escolhido não é enviado a lugar nenhum; as etapas de "processamento" são temporizadores de 2 s |
-| Modo Prática | **Protótipo de UI**, sem áudio ou detecção de notas |
+| Afinador (Modo Prática) | **Implementado**: microfone via Web Audio API e detecção de notas (YIN) no navegador; veja [Afinador](#afinador-em-tempo-real) |
+| Resto do Modo Prática | **Protótipo de UI** (partitura, player, seções, metas e estatísticas usam dados fixos) |
 | Pagamentos | **Não implementado** (o pacote `stripe` está nas dependências, mas não é usado) |
 | Login social (Google etc.) | **Não implementado** (os botões do Google aparecem nas telas de auth, mas não fazem nada) |
 | Lint | ESLint 10 com flat config (`eslint.config.mjs`, regras do `eslint-config-next`) |
 | Testes automatizados | Vitest (unitários) e Playwright (e2e no Chromium); veja [Testes](#testes) |
-| CI | **Ainda não configurado** |
+| CI/CD | GitHub Actions: checks em todo push/PR para `main` e `staging`; deploy na Vercel **configurado, mas só roda quando os secrets da Vercel existirem**; veja [CI/CD](#cicd) |
 
 ## Stack
 
@@ -37,6 +40,27 @@ progresso.
 - **Auth.js / NextAuth v5 (beta)** com `@auth/prisma-adapter`
 - **Prisma 6** + **PostgreSQL 17** (via Docker Compose em desenvolvimento)
 - **Zod 4** para validação de formulários e do ambiente
+
+## Afinador em tempo real
+
+No Modo Prática (`/dashboard/practice`), o card **Afinador** usa o microfone
+para mostrar a nota tocada ou cantada, a frequência, o desvio em cents
+(±50), um ponteiro e a forma de onda ao vivo. Dentro de ±5 cents a nota
+aparece como "Afinado".
+
+- **Tudo roda no navegador.** O áudio não é gravado nem enviado a servidor
+  algum, e não há custo de API ou de IA.
+- **Algoritmo:** YIN (de Cheveigné & Kawahara, 2002) em TypeScript puro, em
+  `src/lib/audio/pitch.ts`, com faixa de 60 Hz a 1500 Hz e referência
+  A4 = 440 Hz. A leitura passa por uma mediana curta para não oscilar.
+- **Microfone:** `getUserMedia` com cancelamento de eco, supressão de ruído
+  e ganho automático desligados, porque eles distorcem a altura do som.
+  Permissão negada, falta de microfone e navegador sem suporte (é preciso
+  HTTPS ou `localhost`) mostram mensagens próprias. O microfone é liberado
+  ao parar e ao sair da página.
+- **Limites:** detecta uma nota por vez (monofônico); acordes e notas abaixo
+  de 60 Hz (como a corda Si de um baixo de 5 cordas) não são suportados. Os
+  dados de progresso ao redor do afinador continuam fictícios.
 
 ## Como rodar localmente
 
@@ -100,24 +124,56 @@ npx playwright install chromium      # uma vez, baixa o navegador
 yarn test:e2e                        # end-to-end (Playwright)
 ```
 
-- **Unitários** (`*.test.ts(x)` ao lado do código): schemas Zod de login e
-  cadastro, a lógica do `authorize` (`src/lib/auth/authorize-credentials.ts`,
-  com o repositório de usuários mockado), as regras de acesso de rotas
+- **Unitários** (`*.test.ts(x)` ao lado do código): o detector de notas
+  (`src/lib/audio/pitch.test.ts`, com senoides sintetizadas das cordas do
+  violão, tons com harmônicos, ruído e silêncio), o componente do afinador
+  (Web Audio API falsa, permissão negada, liberação do microfone), schemas
+  Zod de login e cadastro, a lógica do `authorize`
+  (`src/lib/auth/authorize-credentials.ts`, com o repositório de usuários
+  mockado), as regras de acesso de rotas
   (`getRouteRedirect` em `routes.ts`), a validação do ambiente
   (`infra/env.ts`), `cn` e os banners de erro/sucesso dos formulários (jsdom
   + Testing Library).
 - **E2E** (`e2e/`): a landing page renderiza e leva a `/signin` e
   `/signup`; os formulários mostram os erros de validação devolvidos pelas
   server actions; visitantes sem sessão que abrem `/dashboard` vão para
-  `/signin`. O servidor de teste recebe variáveis descartáveis e um
-  `DATABASE_URL` apontando para uma porta fechada, por isso os testes só
-  cobrem caminhos que não chegam ao banco: **cadastro e login com sucesso não
-  são testados** ainda.
+  `/signin`; o afinador recebe um tom G3 gerado como microfone falso do
+  Chromium e mostra G3 / 196 Hz / "Afinado". O servidor de teste recebe
+  variáveis descartáveis e um `DATABASE_URL` apontando para uma porta
+  fechada. Telas protegidas são abertas com um cookie de sessão JWT assinado
+  com o segredo de teste (`e2e/support/session.ts`), sem passar pelo login.
+  Por isso **cadastro e login com sucesso não são testados** ainda.
 
 Requisitos: o Vitest 5 exige **Node.js 22.12+** (a app em si roda com 20.9+).
 No Windows, rode os testes num terminal cujo diretório atual use a letra do
 drive em maiúscula (`C:\...`); com `c:\...` o Vitest carrega o projeto duas
 vezes e as suítes falham com `Cannot read properties of undefined`.
+
+## CI/CD
+
+Fluxo de branches: todo trabalho entra em `staging`; `main` só recebe
+merges revisados de `staging` e representa produção.
+
+- **CI** (`.github/workflows/ci.yml`), em todo push e pull request para
+  `main` e `staging`, com Node 22 e cache do Yarn:
+  - job de checks: `yarn lint`, `yarn typecheck`, `yarn test` e
+    `yarn build` (com variáveis descartáveis; o build não acessa o banco);
+  - job de e2e: instala o Chromium e roda `yarn test:e2e`; se falhar, o
+    relatório do Playwright fica disponível como artifact por 7 dias.
+- **Deploy** (`.github/workflows/deploy.yml`), chamado pelo CI só depois que
+  os dois jobs passam, e só em push:
+  - `staging` → deploy de preview na Vercel, ambiente `staging` do GitHub;
+  - `main` → deploy de produção na Vercel, ambiente `production`.
+  - Enquanto `VERCEL_TOKEN`, `VERCEL_ORG_ID` e `VERCEL_PROJECT_ID` não
+    estiverem nos secrets do repositório (ou dos ambientes), o job apenas
+    emite um aviso e termina sem deploy. **Hoje nenhum deploy é feito.**
+  - As variáveis da aplicação (`DATABASE_URL`, `AUTH_SECRET`) vêm das
+    configurações do projeto na Vercel, não do repositório; sem elas o build
+    falha na validação de `infra/env.ts`.
+- **Dependabot** (`.github/dependabot.yml`): PRs semanais de npm
+  (minor/patch agrupados) e mensais de GitHub Actions, com destino
+  `staging`. O GitHub só lê esse arquivo na branch padrão, então ele passa a
+  valer depois do primeiro merge em `main`.
 
 ## Arquitetura
 
@@ -132,16 +188,18 @@ prisma/                    schema.prisma (User, Account) e migrations
 src/
   proxy.ts                 Redireciona visitantes e usuários logados conforme routes.ts
   lib/auth/                authorizeCredentials (checagem de e-mail e senha do login)
+  lib/audio/               Detecção de notas (YIN) e conversão frequência → nota/cents
   actions/                 Server Actions: signin-user, signup-user, logout-user
   schemas/                 Schemas Zod dos formulários de auth
   repositories/            Acesso a dados (getUserByEmail, getUserById)
   app/
     (auth)/                signin, signup, forgot-password
-    (protected)/dashboard  Telas do dashboard (protótipos com dados fixos)
+    (protected)/dashboard  Telas do dashboard (protótipos com dados fixos, exceto o afinador)
     api/auth/[...nextauth] Handlers do Auth.js
-  components/              UI (ui/ = componentes base, auth/, home/, layouts/)
+  components/              UI (ui/ = componentes base, auth/, home/, layouts/, practice/tuner)
   providers/               Layout protegido (sidebar) e tema
-e2e/                       Testes end-to-end (Playwright)
+e2e/                       Testes end-to-end (Playwright) e helpers em e2e/support
+.github/                   Workflows de CI e deploy, Dependabot
 ```
 
 Fluxo de login: o formulário chama a server action `handleSigninUser`, que
