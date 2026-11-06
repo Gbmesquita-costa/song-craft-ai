@@ -14,6 +14,7 @@
     "typecheck": "next typegen && tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:e2e": "playwright test",
     "wait-for-postgres": "tsx infra/scripts/wait-for-postgres.ts",
     "prisma:migrate:dev": "prisma migrate dev",
     "database:up": "docker compose -f compose.yaml up -d song-craft-database",
@@ -53,6 +54,7 @@
     "zod": "^4.0.5"
   },
   "devDependencies": {
+    "@playwright/test": "1.64.1",
     "@tailwindcss/postcss": "^4",
     "@testing-library/dom": "^10.4.2",
     "@testing-library/jest-dom": "^7.0.1",
