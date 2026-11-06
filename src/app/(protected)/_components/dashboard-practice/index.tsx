@@ -13,6 +13,8 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 
+import { Tuner } from "@/components/practice/tuner";
+
 import {
   Play,
   Pause,
@@ -385,6 +387,9 @@ const DashboardPractice = () => {
 
         {/* Sidebar */}
         <div className="space-y-6">
+          {/* Real-time tuner (microphone, runs entirely in the browser) */}
+          <Tuner />
+
           {/* Current Section */}
           <Card>
             <CardHeader>
