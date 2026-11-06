@@ -70,3 +70,10 @@ jobs:
             playwright-report/
             test-results/
           retention-days: 7
+
+  deploy:
+    name: Deploy
+    needs: [checks, e2e]
+    if: github.event_name == 'push'
+    uses: ./.github/workflows/deploy.yml
+    secrets: inherit
