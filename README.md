@@ -81,7 +81,7 @@ Todas estão documentadas em [`.env.example`](./.env.example):
 | `yarn dev` | Sobe o banco, aguarda, roda migrations e inicia `next dev` |
 | `yarn build` | Build de produção do Next.js |
 | `yarn start` | Serve o build de produção |
-| `yarn tsc --noEmit` | Checagem de tipos |
+| `yarn typecheck` | Gera os tipos de rotas do Next (`next typegen`) e roda `tsc --noEmit` |
 | `yarn lint` | ESLint em todo o projeto |
 | `yarn prisma:migrate:dev` | `prisma migrate dev` |
 | `yarn database:up` / `database:stop` / `database:down` | Controla o container do Postgres |

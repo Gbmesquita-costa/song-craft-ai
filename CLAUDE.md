@@ -17,7 +17,7 @@ docs or commit messages.
 ```bash
 yarn install                 # Yarn 1 (classic); keep yarn.lock, never add package-lock.json
 yarn dev                     # docker Postgres up -> wait -> prisma migrate dev -> next dev
-yarn tsc --noEmit            # type-check (must pass before every commit)
+yarn typecheck               # next typegen + tsc --noEmit (must pass before every commit)
 yarn lint                    # ESLint flat config (must pass before every commit)
 yarn build                   # production build (must pass before every commit)
 yarn prisma:migrate:dev      # create/apply migrations after editing prisma/schema.prisma

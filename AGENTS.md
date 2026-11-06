@@ -9,7 +9,7 @@ Rules for any coding agent (and human) changing this repository.
 - Environment: copy `.env.example` to `.env` and generate `AUTH_SECRET`
   (`npx auth secret`). `infra/env.ts` rejects missing or placeholder values.
 - Before every commit, all of these must pass:
-  - `yarn tsc --noEmit`
+  - `yarn typecheck`
   - `yarn lint`
   - `yarn build`
   - the test commands, once they exist in `package.json`

@@ -11,6 +11,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
+    "typecheck": "next typegen && tsc --noEmit",
     "wait-for-postgres": "tsx infra/scripts/wait-for-postgres.ts",
     "prisma:migrate:dev": "prisma migrate dev",
     "database:up": "docker compose -f compose.yaml up -d song-craft-database",
